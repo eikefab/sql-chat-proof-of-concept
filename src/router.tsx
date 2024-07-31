@@ -4,8 +4,19 @@ import { NavigationContainer } from "@react-navigation/native";
 import Login from "./page/login";
 import { useEffect } from "react";
 import Home from "./page/home";
+import Talk from "./page/talk";
 
-const Stack = createNativeStackNavigator();
+export type Routes = {
+    "Login": undefined,
+    "Home": undefined,
+    "Conversa": {
+        userId: number,
+        targetId: number,
+    },
+    "Usuarios": undefined,
+}
+
+const Stack = createNativeStackNavigator<Routes>();
 
 export default function Router() {
     const { user } = useAuth();
@@ -15,10 +26,18 @@ export default function Router() {
     if (user) {
         return (
             <NavigationContainer>
-                <Stack.Navigator screenOptions={{ headerShown: false, }}>
+                <Stack.Navigator 
+                    screenOptions={{ headerShown: false, }}
+                    initialRouteName="Home"
+                >
                     <Stack.Screen
                         name="Home"
                         component={Home}
+                    />
+
+                    <Stack.Screen
+                        name="Conversa"
+                        component={Talk}
                     />
                 </Stack.Navigator>
             </NavigationContainer>

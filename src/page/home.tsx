@@ -1,10 +1,19 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/use-auth";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useEffect, useState } from "react";
 import api from "../service/api";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Routes } from "../router";
+import InitialIcon from "../../components/initial-icon";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-function isDifferenceLessThanOrEqualToOneMinute(date1: Date, date2: Date) {
+export function minuteDiffer(date1: Date, date2: Date) {
+    if (!date2) {
+        return false;
+    }
+
     const differenceInMillis = Math.abs(date1.getTime() - date2.getTime());
     const differenceInMinutes = differenceInMillis / (1000 * 60);
 
@@ -13,14 +22,10 @@ function isDifferenceLessThanOrEqualToOneMinute(date1: Date, date2: Date) {
 
 export default function Home() {
     const { user, logout } = useAuth();
+    const navigation = useNavigation<NativeStackNavigationProp<Routes>>();
 
     const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
-
-    function getInitials(target: User = user!) {
-        const names = target.nome.split(" ");
-
-        return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
-    }
+    const [messages, setMessages] = useState<Message[]>([]);
 
     async function ping() {
         try {
@@ -39,27 +44,90 @@ export default function Home() {
             const { data } = await api.get<{ items: User[] }>("usuarios");
 
             setConnectedUsers(
-                data.items.filter(
-                    ({ dth_acesso }) => (
-                        dth_acesso && isDifferenceLessThanOrEqualToOneMinute(new Date(), new Date(dth_acesso)) // 1 minuto
+                data.items
+                    .filter(
+                        ({ dth_acesso }) => (
+                            dth_acesso && minuteDiffer(new Date(), new Date(dth_acesso)) // 1 minuto
+                        )
                     )
-                )
+                    .filter(
+                        ({ id_usuario }) => (
+                            id_usuario !== user!.id_usuario
+                        )
+                    )
             );
         } catch (error) {
             console.error(error);
         }
     }
 
+    async function fetchMessages() {
+        try {
+            const { data } = await api.get(`conversa-recente/${user!.id_usuario}`);
+
+            setMessages(data.items);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     function UserItem(item: User) {
+        function onPress() {
+            navigation.navigate(
+                "Conversa", 
+                { 
+                    userId: user!.id_usuario, 
+                    targetId: item.id_usuario 
+                }
+            );
+        }
+
         return (
-            <TouchableOpacity style={{ width: 60, marginRight: 20, }}>
+            <TouchableOpacity 
+                style={{ width: 60, marginRight: 20, }}
+                onPress={onPress}
+            >
                 <View>
-                    <View style={styles.icon}>
-                        <Text style={styles.iconText}>{getInitials(item)}</Text>
-                    </View>
+                    <InitialIcon text={item.nome} />
                     <View style={styles.connected} />
                 </View>
                 <Text style={styles.connectName}>{item.nome}</Text>
+            </TouchableOpacity>
+        );
+    }
+
+    function MessageItem(item: Message) {
+        const author = item.id_remetente === user?.id_usuario ? item.nome_destinatario : item.nome_remetente;
+        const sentAt = new Date(item.dth_envio);
+
+        const dateDisplay = `${sentAt.getHours()}:${sentAt.getMinutes()}`;
+
+        function onPress() {
+            navigation.navigate(
+                "Conversa", 
+                { 
+                    userId: user!.id_usuario, 
+                    targetId: item.id_remetente === user?.id_usuario ? item.id_destinatario : item.id_remetente,
+                }
+            );
+        }
+
+        return (
+            <TouchableOpacity 
+                style={styles.talk}
+                onPress={onPress}
+            >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <InitialIcon text={author} />
+                    <View>
+                        <Text style={{ fontSize: 18, fontWeight: "bold" }}>{author}</Text>
+                        <Text>
+                            {item.id_remetente === user?.id_usuario && "Você: "}
+                            {item.conteudo}
+                        </Text>
+                    </View>
+                </View>
+                <Text>{dateDisplay}</Text>
             </TouchableOpacity>
         );
     }
@@ -68,10 +136,12 @@ export default function Home() {
         () => {
             const pingInterval = setInterval(ping, 5000);
             const connectionInterval = setInterval(fetchConnected, 5000);
+            const messageInterval = setInterval(fetchMessages, 5000);
 
             return () => {
                 clearInterval(pingInterval);
                 clearInterval(connectionInterval);
+                clearInterval(messageInterval);
             }
         },
         []
@@ -83,21 +153,39 @@ export default function Home() {
                 onPress={logout}
                 style={styles.iconNameContainer}
             >
-                <View style={styles.icon}>
-                    <Text style={styles.iconText}>{getInitials()}</Text>
-                </View>
+                <InitialIcon text={user!.nome} />
                 <Text style={styles.title}>{user!.nome}</Text>
             </TouchableOpacity>
             <View>
                 <Text style={styles.title}>Usuários conectados ({connectedUsers.length})</Text>
                 <FlatList
+                    style={{ marginBottom: 40, }}
                     data={connectedUsers}
                     keyExtractor={(item) => `connected-user-${item.id_usuario}`}
                     renderItem={({ item }) => <UserItem {...item} />}
                     horizontal
                     showsHorizontalScrollIndicator={false}
+                    bounces={false}
+                />
+                <Text style={styles.title}>Últimas conversas</Text>
+                <FlatList
+                    data={messages}
+                    keyExtractor={(item) => `message-${item.id_mensagem}`}
+                    renderItem={({ item }) => <MessageItem {...item} />}
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
                 />
             </View>
+            <TouchableOpacity 
+                style={styles.chatButton}
+                onPress={() => navigation.navigate("Usuarios")}
+            >
+                <MaterialCommunityIcons 
+                    name="forum"
+                    size={28}
+                    color="#FFF"
+                />
+            </TouchableOpacity>
         </SafeAreaView>
     );
 }
@@ -112,21 +200,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginBottom: 40,
-    },
-    icon: {
-        borderRadius: 99,
-        backgroundColor: "#999999",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-        width: 60,
-        height: 60,
-        marginRight: 14,
-    },
-    iconText: {
-        color: "#FFF",
-        fontWeight: "bold",
-        fontSize: 16,
     },
     connected: {
         position: "absolute",
@@ -146,5 +219,25 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         fontSize: 18,
         marginBottom: 11,
+    },
+    talk: {
+        flexDirection: "row",
+        marginBottom: 20,
+        backgroundColor: "#D9D9D9",
+        padding: 20,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "space-between"
+    },
+    chatButton: {
+        position: "absolute",
+        bottom: 20,
+        right: 20,
+        width: 50,
+        height: 50,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 10,
+        backgroundColor: "#6CAE75",
     }
 })
