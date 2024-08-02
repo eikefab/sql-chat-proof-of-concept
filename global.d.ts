@@ -10,7 +10,10 @@ declare interface Message {
     ind_tipo: "T",
     id_remetente: number;
     id_destinatario: number;
-    nome_remetente: string;
-    nome_destinatario: string;
     dth_envio: number;
+}
+
+declare interface RecentMessage extends Message {
+    nome_destinatario: string;
+    nome_remetente: string;
 }

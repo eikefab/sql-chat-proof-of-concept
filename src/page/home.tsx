@@ -25,7 +25,7 @@ export default function Home() {
     const navigation = useNavigation<NativeStackNavigationProp<Routes>>();
 
     const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<RecentMessage[]>([]);
 
     async function ping() {
         try {
@@ -96,7 +96,7 @@ export default function Home() {
         );
     }
 
-    function MessageItem(item: Message) {
+    function MessageItem(item: RecentMessage) {
         const author = item.id_remetente === user?.id_usuario ? item.nome_destinatario : item.nome_remetente;
         const sentAt = new Date(item.dth_envio);
 

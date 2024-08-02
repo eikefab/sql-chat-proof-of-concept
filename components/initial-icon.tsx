@@ -29,7 +29,6 @@ const styles = StyleSheet.create({
         padding: 20,
         width: 60,
         height: 60,
-        marginRight: 14,
     },
     iconText: {
         color: "#FFF",

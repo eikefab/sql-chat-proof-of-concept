@@ -5,12 +5,12 @@ import Login from "./page/login";
 import { useEffect } from "react";
 import Home from "./page/home";
 import Talk from "./page/talk";
+import Users from "./page/users";
 
 export type Routes = {
     "Login": undefined,
     "Home": undefined,
     "Conversa": {
-        userId: number,
         targetId: number,
     },
     "Usuarios": undefined,
@@ -26,7 +26,7 @@ export default function Router() {
     if (user) {
         return (
             <NavigationContainer>
-                <Stack.Navigator 
+                <Stack.Navigator
                     screenOptions={{ headerShown: false, }}
                     initialRouteName="Home"
                 >
@@ -38,6 +38,11 @@ export default function Router() {
                     <Stack.Screen
                         name="Conversa"
                         component={Talk}
+                    />
+
+                    <Stack.Screen
+                        name="Usuarios"
+                        component={Users}
                     />
                 </Stack.Navigator>
             </NavigationContainer>
