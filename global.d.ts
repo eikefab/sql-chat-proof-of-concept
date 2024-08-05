@@ -17,3 +17,7 @@ declare interface RecentMessage extends Message {
     nome_destinatario: string;
     nome_remetente: string;
 }
+
+declare interface PaginatedItems<T> {
+    items: Array<T>;
+}

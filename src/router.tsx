@@ -8,56 +8,43 @@ import Talk from "./page/talk";
 import Users from "./page/users";
 
 export type Routes = {
-    "Login": undefined,
-    "Home": undefined,
-    "Conversa": {
-        targetId: number,
-    },
-    "Usuarios": undefined,
-}
+  Login: undefined;
+  Home: undefined;
+  Conversa: {
+    targetId: number;
+  };
+  Usuarios: undefined;
+};
 
 const Stack = createNativeStackNavigator<Routes>();
 
 export default function Router() {
-    const { user } = useAuth();
+  const { user } = useAuth();
 
-    useEffect(() => { }, [user]);
+  useEffect(() => {}, [user]);
 
-    if (user) {
-        return (
-            <NavigationContainer>
-                <Stack.Navigator
-                    screenOptions={{ headerShown: false, }}
-                    initialRouteName="Home"
-                >
-                    <Stack.Screen
-                        name="Home"
-                        component={Home}
-                    />
-
-                    <Stack.Screen
-                        name="Conversa"
-                        component={Talk}
-                    />
-
-                    <Stack.Screen
-                        name="Usuarios"
-                        component={Users}
-                    />
-                </Stack.Navigator>
-            </NavigationContainer>
-        );
-    }
-
+  if (user) {
     return (
-        <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false, }}>
-                <Stack.Screen
-                    name="Login"
-                    component={Login}
-                />
-            </Stack.Navigator>
-        </NavigationContainer>
-    );
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName="Home"
+        >
+          <Stack.Screen name="Home" component={Home} />
 
+          <Stack.Screen name="Conversa" component={Talk} />
+
+          <Stack.Screen name="Usuarios" component={Users} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={Login} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }
