@@ -8,6 +8,9 @@ import {
 } from "react";
 import api from "../service/api";
 import { Alert } from "react-native";
+import useNotifications from "../hook/use-notification";
+
+import * as Notifications from "expo-notifications";
 
 type LoginInput = {
   login: string;
@@ -23,6 +26,8 @@ export type AuthContextProps = {
 const AuthContext = createContext({} as AuthContextProps);
 
 export function AuthContextProvider({ children }: { children: ReactNode }) {
+  const { fetchToken, pushToken } = useNotifications();
+
   const userStorage = useAsyncStorage("Chat.User");
   const [user, setUser] = useState<User>();
 
@@ -34,6 +39,20 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
       setUser(data);
       userStorage.setItem(JSON.stringify(data));
+
+      Notifications.scheduleNotificationAsync({
+        trigger: null,
+        content: {
+          title: "Bem-vindo",
+          subtitle: "Você fez login com sucesso.",
+        },
+      });
+
+      const token = await fetchToken();
+
+      if (token) {
+        await pushToken(data, token);
+      }
     } catch (error) {
       Alert.alert(
         "Erro",
